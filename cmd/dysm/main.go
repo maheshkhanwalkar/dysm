@@ -12,7 +12,7 @@ func main() {
 	}
 
 	objFile := os.Args[1]
-	internal.LoadObjectFile(objFile)
+	_ = internal.LoadObjectFile(objFile)
 }
 
 func die(msg string) {

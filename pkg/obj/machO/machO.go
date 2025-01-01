@@ -5,10 +5,12 @@ type fileType uint32
 type magicType uint32
 
 // CPU type constants
-// There are other possible values, but these are the only two mainstream ones
+// There are other possible values, but these are the only mainstream ones
 const (
-	X86 cpuType = 0x6
-	ARM cpuType = 0xC
+	X86_32 cpuType = 0x7
+	ARM32  cpuType = 0xC
+	X86_64 cpuType = 0x1000007
+	ARM64  cpuType = 0x100000C
 )
 
 // File Type constants
@@ -34,4 +36,19 @@ type Header struct {
 	SizeLoadCmd uint32
 	Flags       uint32
 	Reserved    uint32
+}
+
+func CpuType(cpuType cpuType) string {
+	switch cpuType {
+	case X86_32:
+		return "x86_32"
+	case ARM32:
+		return "ARM32"
+	case X86_64:
+		return "x86_64"
+	case ARM64:
+		return "ARM64"
+	default:
+		return "unknown"
+	}
 }
