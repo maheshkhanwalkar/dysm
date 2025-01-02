@@ -12,7 +12,11 @@ func main() {
 	}
 
 	objFile := os.Args[1]
-	_ = internal.LoadObjectFile(objFile)
+	err := internal.LoadObjectFile(objFile)
+
+	if err != nil {
+		die(err.Error())
+	}
 }
 
 func die(msg string) {

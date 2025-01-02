@@ -2,7 +2,6 @@ package machO
 
 type cpuType uint32
 type fileType uint32
-type magicType uint32
 
 // CPU type constants
 // There are other possible values, but these are the only mainstream ones
@@ -22,8 +21,8 @@ const (
 
 // Magic Value constants
 const (
-	Magic32 magicType = 0xfeedface
-	Magic64 magicType = 0xfeedfecf
+	Magic32 uint32 = 0xfeedface
+	Magic64 uint32 = 0xfeedfacf
 )
 
 // Header is the on-disk representation of the Mach-O header for Mac object files
