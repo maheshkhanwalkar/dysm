@@ -10,7 +10,6 @@ const (
 )
 
 // File Type constants
-// TODO - check if there are other values used frequently
 const (
 	RelocatableObjectFile     uint32 = 0x1
 	DemandPagedExecutableFile uint32 = 0x2
@@ -52,17 +51,6 @@ type SegmentLoadCmd64 struct {
 	Unused2     uint32 // Initial virtual memory protections  [again, don't care]
 	NumSections uint32
 	Flag32      uint32
-}
-
-func CpuArchName(cpuType uint32) string {
-	switch cpuType {
-	case X86_64:
-		return "x86_64"
-	case ARM64:
-		return "ARM64"
-	default:
-		return "unknown"
-	}
 }
 
 func GetSegmentName(seg *SegmentLoadCmd64) string {

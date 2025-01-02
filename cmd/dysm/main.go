@@ -11,12 +11,16 @@ func main() {
 		die("no arguments provided")
 	}
 
-	objFile := os.Args[1]
-	err := internal.LoadObjectFile(objFile)
+	objFileName := os.Args[1]
+	obj, err := internal.LoadMachObjectFile(objFileName)
 
 	if err != nil {
 		die(err.Error())
+		return
 	}
+
+	fmt.Println("File: " + objFileName)
+	fmt.Printf("Architecture: %s\n", obj.CpuArchName())
 }
 
 func die(msg string) {
