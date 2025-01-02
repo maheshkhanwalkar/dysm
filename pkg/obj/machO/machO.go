@@ -1,48 +1,61 @@
 package machO
 
-type cpuType uint32
-type fileType uint32
+import "bytes"
 
 // CPU type constants
 // There are other possible values, but these are the only mainstream ones
 const (
-	X86_32 cpuType = 0x7
-	ARM32  cpuType = 0xC
-	X86_64 cpuType = 0x1000007
-	ARM64  cpuType = 0x100000C
+	X86_64 uint32 = 0x1000007
+	ARM64  uint32 = 0x100000C
 )
 
 // File Type constants
 // TODO - check if there are other values used frequently
 const (
-	RelocatableObjectFile     fileType = 0x1
-	DemandPagedExecutableFile fileType = 0x2
+	RelocatableObjectFile     uint32 = 0x1
+	DemandPagedExecutableFile uint32 = 0x2
 )
 
-// Magic Value constants
 const (
-	Magic32 uint32 = 0xfeedface
 	Magic64 uint32 = 0xfeedfacf
 )
 
 // Header is the on-disk representation of the Mach-O header for Mac object files
 type Header struct {
 	Magic       uint32
-	CpuType     cpuType
+	CpuType     uint32
 	CpuSubType  uint32
-	FileType    fileType
+	FileType    uint32
 	NumLoadCmd  uint32
 	SizeLoadCmd uint32
 	Flags       uint32
 	Reserved    uint32
 }
 
-func CpuType(cpuType cpuType) string {
+const (
+	SegmentLoad64 uint32 = 0x19
+)
+
+// LoadCmd is a load command entry, which follows the Mach-O header
+type LoadCmd struct {
+	CmdType uint32
+	CmdSize uint32
+}
+
+type SegmentLoadCmd64 struct {
+	SegmentName [16]byte
+	Address     uint64
+	AddressSize uint64
+	FileOffset  uint64
+	FileSize    uint64
+	Unused1     uint32 // This is actually Maximum virtual memory protections -- but we don't care
+	Unused2     uint32 // Initial virtual memory protections  [again, don't care]
+	NumSections uint32
+	Flag32      uint32
+}
+
+func CpuArchName(cpuType uint32) string {
 	switch cpuType {
-	case X86_32:
-		return "x86_32"
-	case ARM32:
-		return "ARM32"
 	case X86_64:
 		return "x86_64"
 	case ARM64:
@@ -50,4 +63,20 @@ func CpuType(cpuType cpuType) string {
 	default:
 		return "unknown"
 	}
+}
+
+func GetSegmentName(seg *SegmentLoadCmd64) string {
+	// The raw segment name is a NULL-padded string, so we need to find the position of the first NULL
+	// and take the slice just before that point and convert it to a Go string
+	n := bytes.IndexByte(seg.SegmentName[:], 0)
+	var name []byte
+
+	if n >= 0 {
+		name = seg.SegmentName[:n]
+	} else {
+		// Somehow there is no NULL, so just use the entire byte array
+		name = seg.SegmentName[:]
+	}
+
+	return string(name)
 }
