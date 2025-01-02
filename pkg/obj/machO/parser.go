@@ -24,8 +24,11 @@ type Segment struct {
 }
 
 // Section represents a Mach-O section
-// TODO actually add relevant fields
 type Section struct {
+	Name    string
+	Address uint64
+	Size    uint64
+	Data    []byte
 }
 
 // Test whether magic is a Mach-O magic value
@@ -42,7 +45,7 @@ func FromSlice(arr []byte) (*MachO, error) {
 		return nil, err
 	}
 
-	segments, err := readSegments(r, hdr)
+	segments, err := readSegments(r, hdr, arr)
 	if err != nil {
 		return nil, err
 	}
@@ -85,7 +88,7 @@ func readHeader(r io.Reader) (*raw.Header, error) {
 	return &hdr, nil
 }
 
-func readSegments(r io.Reader, hdr *raw.Header) ([]Segment, error) {
+func readSegments(r io.Reader, hdr *raw.Header, arr []byte) ([]Segment, error) {
 	segments := make([]Segment, 0, hdr.NumLoadCmd)
 
 	for i := uint32(0); i < hdr.NumLoadCmd; i++ {
@@ -110,22 +113,27 @@ func readSegments(r io.Reader, hdr *raw.Header) ([]Segment, error) {
 		}
 
 		seg := Segment{
-			Name:        raw.GetSegmentName(&segment),
+			Name:        raw.GetName(segment.SegmentName[:]),
 			Address:     segment.Address,
 			AddressSize: segment.AddressSize,
-			Sections:    make([]Section, segment.NumSections),
+			Sections:    make([]Section, 0, segment.NumSections),
+		}
+
+		for i := uint32(0); i < segment.NumSections; i++ {
+			var section raw.Section64
+			if err := binary.Read(r, binary.LittleEndian, &section); err != nil {
+				return nil, err
+			}
+
+			seg.Sections = append(seg.Sections, Section{
+				Name:    raw.GetName(section.SectionName[:]),
+				Address: section.Address,
+				Size:    section.Size,
+				Data:    arr[section.FileOffset : uint64(section.FileOffset)+section.Size],
+			})
 		}
 
 		segments = append(segments, seg)
-
-		// TODO actually read the sections -- instead of just skipping over them...
-		const sectionSize = 80
-		ign := make([]byte, sectionSize*segment.NumSections)
-		if n, err := r.Read(ign); err != nil {
-			if n != len(ign) {
-				return nil, err
-			}
-		}
 	}
 
 	return segments, nil

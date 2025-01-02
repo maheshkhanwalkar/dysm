@@ -53,17 +53,33 @@ type SegmentLoadCmd64 struct {
 	Flag32      uint32
 }
 
-func GetSegmentName(seg *SegmentLoadCmd64) string {
-	// The raw segment name is a NULL-padded string, so we need to find the position of the first NULL
+type Section64 struct {
+	SectionName     [16]byte
+	SegmentName     [16]byte
+	Address         uint64
+	Size            uint64
+	FileOffset      uint32
+	Alignment       uint32
+	RelocFileOffset uint32
+	NumRelocations  uint32
+	Flag            uint32
+	Reserved1       uint32
+	Reserved2       uint32
+	Reserved3       uint32
+}
+
+// GetName converts a NULL-padded byte array to a Go string
+func GetName(nameBytes []byte) string {
+	// The raw name is a NULL-padded string, so we need to find the position of the first NULL
 	// and take the slice just before that point and convert it to a Go string
-	n := bytes.IndexByte(seg.SegmentName[:], 0)
+	n := bytes.IndexByte(nameBytes, 0)
 	var name []byte
 
 	if n >= 0 {
-		name = seg.SegmentName[:n]
+		name = nameBytes[:n]
 	} else {
 		// Somehow there is no NULL, so just use the entire byte array
-		name = seg.SegmentName[:]
+		name = nameBytes
 	}
 
 	return string(name)
