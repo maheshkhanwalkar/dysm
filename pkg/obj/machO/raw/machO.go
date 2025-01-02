@@ -1,4 +1,4 @@
-package machO
+package raw
 
 import "bytes"
 

@@ -21,6 +21,10 @@ func main() {
 
 	fmt.Println("File: " + objFileName)
 	fmt.Printf("Architecture: %s\n", obj.CpuArchName())
+
+	for _, seg := range obj.Segments {
+		fmt.Println("Segment name: " + seg.Name)
+	}
 }
 
 func die(msg string) {
