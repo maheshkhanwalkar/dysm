@@ -4,10 +4,12 @@ import (
 	"github.com/maheshkhanwalkar/dysm/pkg/obj/machO"
 )
 
-func LoadMachObjectFile(name string) (*machO.MachO, error) {
+func LoadMachObjectFile(name string) (*MachObjectFile, error) {
 	mach, err := machO.FromFile(name)
 	if err != nil {
 		return nil, err
 	}
-	return mach, nil
+
+	objFile := NewMachObjectFile(mach, name)
+	return objFile, nil
 }

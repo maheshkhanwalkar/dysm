@@ -91,6 +91,20 @@ func GetName(nameBytes []byte) string {
 	return string(name)
 }
 
+// GetPermissionString returns a string representation of the given permission value
+// The format is as follows:
+//  1. 'r' (read-allowed)  or '-' (read not allowed)
+//  2. 'w' (write-allowed) or '-' (write not allowed)
+//  3. 'x' (exec-allowed)  or '-' (exec not allowed)
+//
+// Together, they made a 3-digit string
+//
+//	e.g. r-x means read-execute allowed, but write is not
+//	     rwx means read-write-execute are allowed
+//	     --- means nothing is allowed
+//
+// As shown above, the length of the string returned is always 3 digits long,
+// with any unsupported (denied) modes represented with a '-' character.
 func GetPermissionString(perm uint32) string {
 	r := getPermDigit(perm, MemRead, "r")
 	w := getPermDigit(perm, MemWrite, "w")
