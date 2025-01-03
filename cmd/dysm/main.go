@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/maheshkhanwalkar/dysm/internal"
 	"os"
@@ -11,7 +12,10 @@ func main() {
 		die("no arguments provided")
 	}
 
-	objFileName := os.Args[1]
+	hdr := flag.Bool("hdr", false, "print out section information for the file")
+	flag.Parse()
+
+	objFileName := flag.Arg(0)
 	obj, err := internal.LoadMachObjectFile(objFileName)
 
 	if err != nil {
@@ -19,11 +23,23 @@ func main() {
 		return
 	}
 
-	fmt.Println("File: " + objFileName)
-	fmt.Printf("Architecture: %s\n", obj.CpuArchName())
+	if *hdr {
+		fmt.Println("File: " + objFileName)
+		fmt.Printf("Architecture: %s\n\n", obj.CpuArchName())
 
-	for _, seg := range obj.Segments {
-		fmt.Println("Segment name: " + seg.Name)
+		for _, seg := range obj.Segments {
+			fmt.Printf("Segment name: %s, Start Address: 0x%x, End Address: 0x%x\n", seg.Name, seg.Address,
+				seg.Address+seg.AddressSize)
+
+			for i, section := range seg.Sections {
+				fmt.Printf("\t%d) Section name: %s, Start Address: 0x%x, End Address: 0x%x, Size: %d\n", i+1,
+					section.Name, section.Address, section.Address+section.Size, section.Size)
+			}
+
+			if len(seg.Sections) == 0 {
+				fmt.Println("\tNo sections in this segment")
+			}
+		}
 	}
 }
 
