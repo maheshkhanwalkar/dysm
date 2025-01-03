@@ -28,8 +28,8 @@ func main() {
 		fmt.Printf("Architecture: %s\n\n", obj.CpuArchName())
 
 		for _, seg := range obj.Segments {
-			fmt.Printf("Segment name: %s, Start Address: 0x%x, End Address: 0x%x\n", seg.Name, seg.Address,
-				seg.Address+seg.AddressSize)
+			fmt.Printf("Segment name: %s, Start Address: 0x%x, End Address: 0x%x, Permission: %s\n", seg.Name,
+				seg.Address, seg.Address+seg.AddressSize, seg.Permission)
 
 			for i, section := range seg.Sections {
 				fmt.Printf("\t%d) Section name: %s, Start Address: 0x%x, End Address: 0x%x, Size: %d\n", i+1,

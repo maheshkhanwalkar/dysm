@@ -20,6 +20,7 @@ type Segment struct {
 	Name        string
 	Address     uint64
 	AddressSize uint64
+	Permission  string
 	Sections    []Section
 }
 
@@ -116,6 +117,7 @@ func readSegments(r io.Reader, hdr *raw.Header, arr []byte) ([]Segment, error) {
 			Name:        raw.GetName(segment.SegmentName[:]),
 			Address:     segment.Address,
 			AddressSize: segment.AddressSize,
+			Permission:  raw.GetPermissionString(segment.InitMemProt),
 			Sections:    make([]Section, 0, segment.NumSections),
 		}
 

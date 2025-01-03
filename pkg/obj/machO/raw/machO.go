@@ -41,14 +41,20 @@ type LoadCmd struct {
 	CmdSize uint32
 }
 
+const (
+	MemRead  uint32 = 0x1
+	MemWrite uint32 = 0x2
+	MemExec  uint32 = 0x4
+)
+
 type SegmentLoadCmd64 struct {
 	SegmentName [16]byte
 	Address     uint64
 	AddressSize uint64
 	FileOffset  uint64
 	FileSize    uint64
-	Unused1     uint32 // This is actually Maximum virtual memory protections -- but we don't care
-	Unused2     uint32 // Initial virtual memory protections  [again, don't care]
+	MaxMemProt  uint32
+	InitMemProt uint32
 	NumSections uint32
 	Flag32      uint32
 }
@@ -83,4 +89,19 @@ func GetName(nameBytes []byte) string {
 	}
 
 	return string(name)
+}
+
+func GetPermissionString(perm uint32) string {
+	r := getPermDigit(perm, MemRead, "r")
+	w := getPermDigit(perm, MemWrite, "w")
+	x := getPermDigit(perm, MemExec, "x")
+	return r + w + x
+}
+
+func getPermDigit(perm uint32, flag uint32, ch string) string {
+	if perm&flag != 0 {
+		return ch
+	} else {
+		return "-"
+	}
 }
