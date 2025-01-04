@@ -32,6 +32,7 @@ type Header struct {
 }
 
 const (
+	SymbolTable   uint32 = 0x2
 	SegmentLoad64 uint32 = 0x19
 )
 
@@ -72,6 +73,21 @@ type Section64 struct {
 	Reserved1       uint32
 	Reserved2       uint32
 	Reserved3       uint32
+}
+
+type SymbolTableLoadCmd struct {
+	SymbolFileOffset  uint32
+	NumSymbols        uint32
+	StringTableOffset uint32
+	StringTableSize   uint32
+}
+
+type Symbol64 struct {
+	NameOffset    uint32
+	SymbolType    uint8
+	SectionNumber uint8
+	DataInfo      uint16
+	SymbolAddress uint64
 }
 
 // GetName converts a NULL-padded byte array to a Go string
