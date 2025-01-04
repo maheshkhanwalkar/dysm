@@ -17,10 +17,10 @@ func main() {
 	symtab := flag.Bool("symtab", false, "print out symbol table information")
 
 	flag.Parse()
-
 	objFileName := flag.Arg(0)
-	var obj internal.ObjectFile
+	ensureExclusive(*hdr, *dump, *symtab)
 
+	var obj internal.ObjectFile
 	obj, err := internal.LoadMachObjectFile(objFileName)
 
 	if err != nil {
@@ -47,4 +47,23 @@ func main() {
 func die(msg string) {
 	_, _ = fmt.Fprintln(os.Stderr, msg)
 	os.Exit(1)
+}
+
+func ensureExclusive(hdr bool, dump string, symtab bool) {
+	count := 0
+
+	if hdr {
+		count++
+	}
+	if dump != "" {
+		count++
+	}
+	if symtab {
+		count++
+	}
+
+	if count > 1 {
+		flag.Usage()
+		die("too many arguments provided")
+	}
 }

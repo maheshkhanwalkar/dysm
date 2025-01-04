@@ -2,6 +2,60 @@ package raw
 
 import "bytes"
 
+// Mach-O File Format
+// -------------------------------------------
+// |           Mach-O Header                 |
+// -------------------------------------------
+// |          Load Command 1                 |
+// -------------------------------------------
+// |          Load Command 2                 |
+// -------------------------------------------
+// |               ...                       |
+// -------------------------------------------
+// |          Load Command N                 |
+// -------------------------------------------
+// |                                         |
+// |               Data                      |
+// |                                         |
+// |-----------------------------------------|
+//
+// At a high level, the Mach-O file is split into two major sections the
+// metadata (headers) and data (everything else).
+//
+// The metadata starts off with the Mach-O header [Header struct] which
+// contains the magic value, cpu type, # of load commands, etc.
+//
+// The load command is a generic construct -- which has different sizes
+// depending on its type. The ``first'' part of the load command is represented
+// by the LoadCmd struct.
+//
+// Two concrete types of load commands - segment load command and symbol load
+// command -- SegmentLoadCmd64 and SymbolTableLoadCmd structs -- represent the
+// ``second'' part of the load command.
+//
+// Full Load Command (shown as Load Command i in the diagram above)
+// -------------------------------------------
+// |    LoadCmd    |     SegmentLoadCmd64    |
+// -------------------------------------------
+//
+// The segment load command is special because it contains additional data
+// after the SegmentLoadCmd64 part (but before the next load command starts)
+//
+// ---------------------------------------------------------------------------------
+// | LoadCmd | SegmentLoadCmd64 | Section64 #1 | Section64 #2 | ... | Section64 #M |
+// ---------------------------------------------------------------------------------
+//
+// This additional information is a list of section information, represented
+// by the Section64 struct. This list is all the sections that belong to the
+// particular segment of the load command. The section information metadata
+// contains a file offset -- which points to a location in the Data section
+// -- which is the corresponding data of the section.
+//
+// The Data section contains all kinds of information -- and is generally
+// referenced by pointers (file offsets) in the header metadata. For example,
+// it contains the actual section data (executable code, data, etc.), symbol
+// information, strings, etc.
+
 // CPU type constants
 // There are other possible values, but these are the only mainstream ones
 const (
