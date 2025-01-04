@@ -82,6 +82,12 @@ type SymbolTableLoadCmd struct {
 	StringTableSize   uint32
 }
 
+const (
+	SymbolUndefined uint8 = 0x0
+	SymbolExternal  uint8 = 0x1
+	SymbolSector    uint8 = 0xe
+)
+
 type Symbol64 struct {
 	NameOffset    uint32
 	SymbolType    uint8

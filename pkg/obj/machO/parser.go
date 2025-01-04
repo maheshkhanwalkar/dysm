@@ -37,6 +37,8 @@ type Section struct {
 type Symbol struct {
 	Name    string
 	Address uint64
+	Section *Section
+	symType uint8
 }
 
 // Test whether magic is a Mach-O magic value
@@ -53,7 +55,7 @@ func FromSlice(arr []byte) (*MachO, error) {
 		return nil, err
 	}
 
-	segments, symbols, err := readSegments(r, hdr, arr)
+	segments, symbols, err := readLoadCommands(r, hdr, arr)
 	if err != nil {
 		return nil, err
 	}
@@ -82,6 +84,14 @@ func (m *MachO) CpuArchName() string {
 	}
 }
 
+func (sym *Symbol) IsExported() bool {
+	return sym.symType&raw.SymbolExternal != 0
+}
+
+func (sym *Symbol) IsUndefined() bool {
+	return (sym.symType&raw.SymbolSector) & ^raw.SymbolExternal == raw.SymbolUndefined
+}
+
 func readHeader(r io.Reader) (*raw.Header, error) {
 	var hdr raw.Header
 	if err := binary.Read(r, binary.LittleEndian, &hdr); err != nil {
@@ -96,8 +106,10 @@ func readHeader(r io.Reader) (*raw.Header, error) {
 	return &hdr, nil
 }
 
-func readSegments(r io.Reader, hdr *raw.Header, arr []byte) ([]Segment, []Symbol, error) {
+func readLoadCommands(r io.Reader, hdr *raw.Header, arr []byte) ([]Segment, []Symbol, error) {
 	segments := make([]Segment, 0, hdr.NumLoadCmd)
+	sectionNumbering := make(map[uint8]*Section)
+
 	var symbols []Symbol
 
 	for i := uint32(0); i < hdr.NumLoadCmd; i++ {
@@ -111,9 +123,14 @@ func readSegments(r io.Reader, hdr *raw.Header, arr []byte) ([]Segment, []Symbol
 			if err != nil {
 				return nil, nil, err
 			}
+
+			for _, section := range seg.Sections {
+				sectionNumbering[uint8(len(sectionNumbering))+1] = &section
+			}
+
 			segments = append(segments, *seg)
 		} else if loadCmd.CmdType == raw.SymbolTable {
-			sym, err := processSymbolTable(r, arr)
+			sym, err := processSymbolTable(r, arr, sectionNumbering)
 			if err != nil {
 				return nil, nil, err
 			}
@@ -163,7 +180,7 @@ func processSegment(r io.Reader, arr []byte) (*Segment, error) {
 	return &seg, nil
 }
 
-func processSymbolTable(r io.Reader, arr []byte) ([]Symbol, error) {
+func processSymbolTable(r io.Reader, arr []byte, sectionNumbering map[uint8]*Section) ([]Symbol, error) {
 	var symbolLoadCmd raw.SymbolTableLoadCmd
 	if err := binary.Read(r, binary.LittleEndian, &symbolLoadCmd); err != nil {
 		return nil, err
@@ -181,9 +198,16 @@ func processSymbolTable(r io.Reader, arr []byte) ([]Symbol, error) {
 
 		name := findSymbolName(arr, &symbolLoadCmd, symbol.NameOffset)
 
+		var section *Section = nil
+		if val, ok := sectionNumbering[symbol.SectionNumber]; ok {
+			section = val
+		}
+
 		symbols = append(symbols, Symbol{
 			Name:    name,
 			Address: symbol.SymbolAddress,
+			Section: section,
+			symType: symbol.SymbolType,
 		})
 	}
 

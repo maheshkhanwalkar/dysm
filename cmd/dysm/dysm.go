@@ -14,6 +14,8 @@ func main() {
 
 	hdr := flag.Bool("hdr", false, "print out section information for the file")
 	dump := flag.String("dump", "", "hex dump of specified section")
+	sym := flag.Bool("sym", false, "print out symbol table information")
+
 	flag.Parse()
 
 	objFileName := flag.Arg(0)
@@ -28,6 +30,10 @@ func main() {
 
 	if *hdr {
 		obj.PrintHeaders()
+	}
+
+	if *sym {
+		obj.PrintSymbolTable()
 	}
 
 	if *dump != "" {

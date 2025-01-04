@@ -3,7 +3,9 @@ package internal
 import (
 	"encoding/binary"
 	"fmt"
+	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/maheshkhanwalkar/dysm/pkg/obj/machO"
+	"os"
 )
 
 const (
@@ -14,6 +16,7 @@ const (
 // to print out information about the file
 type ObjectFile interface {
 	PrintHeaders()
+	PrintSymbolTable()
 	DumpSection(sectionName string) error
 }
 
@@ -81,6 +84,36 @@ func (m *MachObjectFile) DumpSection(sectionName string) error {
 	return nil
 }
 
+func (m *MachObjectFile) PrintSymbolTable() {
+	t := table.NewWriter()
+	t.SetOutputMirror(os.Stdout)
+
+	t.SetTitle("Symbol Table")
+	t.AppendHeader(table.Row{"#", "Name", "Address", "Type", "Section"})
+
+	const MaxStringLength = 32
+
+	for i, sym := range m.Obj.Symbols {
+		sectionName := "None"
+		if sym.Section != nil {
+			sectionName = trimString(sym.Section.Name, MaxStringLength)
+		}
+
+		symName := trimString(sym.Name, MaxStringLength)
+
+		t.AppendRow(table.Row{
+			i + 1,
+			symName,
+			fmt.Sprintf("%x", sym.Address),
+			getTypeString(&sym),
+			sectionName,
+		})
+	}
+
+	t.SetStyle(table.StyleLight)
+	t.Render()
+}
+
 func (m *MachObjectFile) findSection(sectionName string) (*machO.Section, error) {
 	var matched *machO.Section
 
@@ -107,4 +140,32 @@ func clumpBytes(arr []byte) []uint16 {
 	}
 
 	return res
+}
+
+func getTypeString(sym *machO.Symbol) string {
+	var typeString string
+
+	if sym.IsExported() {
+		typeString += "External"
+	} else {
+		typeString += "Internal (Not Exported)"
+	}
+
+	if sym.IsUndefined() {
+		typeString += ", Needs linker resolution"
+	}
+
+	if typeString == "" {
+		typeString = "Unknown"
+	}
+
+	return typeString
+}
+
+func trimString(s string, maxLen int) string {
+	if len(s) <= maxLen {
+		return s
+	}
+
+	return s[:maxLen-3] + "..."
 }
