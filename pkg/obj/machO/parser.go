@@ -84,10 +84,12 @@ func (m *MachO) CpuArchName() string {
 	}
 }
 
+// IsExported returns true if the symbol is an exported, external symbol
 func (sym *Symbol) IsExported() bool {
 	return sym.symType&raw.SymbolExternal != 0
 }
 
+// IsUndefined returns true if the symbol is undefined (i.e. requires linker resolution)
 func (sym *Symbol) IsUndefined() bool {
 	return (sym.symType&raw.SymbolSector) & ^raw.SymbolExternal == raw.SymbolUndefined
 }

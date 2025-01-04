@@ -84,11 +84,13 @@ func (m *MachObjectFile) DumpSection(sectionName string) error {
 	return nil
 }
 
+// PrintSymbolTable prints out the symbol table information from the Mach-O file
+// in a tabular format
 func (m *MachObjectFile) PrintSymbolTable() {
 	t := table.NewWriter()
 	t.SetOutputMirror(os.Stdout)
 
-	t.SetTitle("Symbol Table")
+	t.SetTitle("Mach-O Symbol Table")
 	t.AppendHeader(table.Row{"#", "Name", "Address", "Type", "Section"})
 
 	const MaxStringLength = 32
