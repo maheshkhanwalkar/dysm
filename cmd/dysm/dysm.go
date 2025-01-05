@@ -14,11 +14,12 @@ func main() {
 
 	hdr := flag.Bool("hdr", false, "print out section information for the file")
 	dump := flag.String("dump", "", "hex dump of specified section")
+	dumpAll := flag.Bool("dump-all", false, "hex dump all sections")
 	symtab := flag.Bool("symtab", false, "print out symbol table information")
 
 	flag.Parse()
 	objFileName := flag.Arg(0)
-	ensureExclusive(*hdr, *dump, *symtab)
+	ensureExclusive(*hdr, *dump, *dumpAll, *symtab)
 
 	var obj internal.ObjectFile
 	obj, err := internal.LoadMachObjectFile(objFileName)
@@ -37,7 +38,14 @@ func main() {
 	}
 
 	if *dump != "" {
-		err = obj.DumpSection(*dump)
+		err = obj.DumpSections(*dump)
+		if err != nil {
+			die(err.Error())
+		}
+	}
+
+	if *dumpAll {
+		err = obj.DumpSections(".*")
 		if err != nil {
 			die(err.Error())
 		}
@@ -49,13 +57,16 @@ func die(msg string) {
 	os.Exit(1)
 }
 
-func ensureExclusive(hdr bool, dump string, symtab bool) {
+func ensureExclusive(hdr bool, dump string, dumpAll bool, symtab bool) {
 	count := 0
 
 	if hdr {
 		count++
 	}
 	if dump != "" {
+		count++
+	}
+	if dumpAll {
 		count++
 	}
 	if symtab {

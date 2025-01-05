@@ -6,6 +6,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/maheshkhanwalkar/dysm/pkg/obj/machO"
 	"os"
+	"regexp"
 )
 
 const (
@@ -17,7 +18,7 @@ const (
 type ObjectFile interface {
 	PrintHeaders()
 	PrintSymbolTable()
-	DumpSection(sectionName string) error
+	DumpSections(sectionNameRegex string) error
 }
 
 // MachObjectFile represents a Mach-O object file and implements the ObjectFile interface
@@ -50,32 +51,41 @@ func (m *MachObjectFile) PrintHeaders() {
 	}
 }
 
-// DumpSection prints out a hex-dump of the given section
+// DumpSections prints out a hex-dump of all sections that match the given section name regex
 // The section name refers to a Mach-O section (not segment)
-// Returns an error if there is no section with the given name in the object file
-func (m *MachObjectFile) DumpSection(sectionName string) error {
-	section, err := m.findSection(sectionName)
+// Returns an error if there is no section that matches the regex in the object file
+func (m *MachObjectFile) DumpSections(sectionNameRegex string) error {
+	sections, err := m.findSections(sectionNameRegex)
 	if err != nil {
 		return err
 	}
 
-	data := section.Data
-	rounds := uint64(len(data)) / hexDumpRowBytes
+	for _, section := range sections {
+		data := section.Data
+		rounds := uint64(len(data)) / hexDumpRowBytes
 
-	fmt.Printf("Section %s\n\n", sectionName)
+		// Need an extra partial round -- if not cleanly divisible by hexDumpRowBytes
+		if uint64(len(data))%hexDumpRowBytes != 0 {
+			rounds += 1
+		}
 
-	for i := uint64(0); i < rounds; i++ {
-		end := min((i+1)*hexDumpRowBytes, uint64(len(data)))
-		row := clumpBytes(data[i*hexDumpRowBytes : end])
+		fmt.Printf("Section %s\n\n", section.Name)
 
-		address := section.Address + i*hexDumpRowBytes
-		fmt.Printf("%016x: ", address)
+		for i := uint64(0); i < rounds; i++ {
+			end := min((i+1)*hexDumpRowBytes, uint64(len(data)))
+			row := clumpBytes(data[i*hexDumpRowBytes : end])
 
-		for j, u16 := range row {
-			fmt.Printf("%04x", u16)
-			if j != len(row)-1 {
-				fmt.Printf(" ")
+			address := section.Address + i*hexDumpRowBytes
+			fmt.Printf("%016x: ", address)
+
+			for j, u16 := range row {
+				fmt.Printf("%04x", u16)
+				if j != len(row)-1 {
+					fmt.Printf(" ")
+				}
 			}
+
+			fmt.Printf("\n")
 		}
 
 		fmt.Printf("\n")
@@ -116,28 +126,41 @@ func (m *MachObjectFile) PrintSymbolTable() {
 	t.Render()
 }
 
-func (m *MachObjectFile) findSection(sectionName string) (*machO.Section, error) {
-	var matched *machO.Section
+func (m *MachObjectFile) findSections(sectionNameRegex string) ([]machO.Section, error) {
+	var matched = make([]machO.Section, 0)
 
 	// Assumption: a section name is unique across segments -- otherwise, this will return
 	// the first section that matches the given name
 	for _, seg := range m.Obj.Segments {
 		for _, section := range seg.Sections {
-			if section.Name == sectionName {
-				matched = &section
-				return matched, nil
+			didMatch, err := regexp.MatchString("^"+sectionNameRegex+"$", section.Name)
+			if err != nil {
+				return nil, err
+			}
+
+			if didMatch {
+				matched = append(matched, section)
 			}
 		}
 	}
 
-	return nil, fmt.Errorf("section %s not found", sectionName)
+	if len(matched) == 0 {
+		return nil, fmt.Errorf("no section found matching %s", sectionNameRegex)
+	} else {
+		return matched, nil
+	}
 }
 
 func clumpBytes(arr []byte) []uint16 {
 	res := make([]uint16, 0, len(arr)/2+1)
 
 	for i := 0; i < len(arr); i += 2 {
-		u16 := binary.LittleEndian.Uint16(arr[i:min(i+2, len(arr))])
+		group := arr[i:min(i+2, len(arr))]
+		if len(group) == 1 {
+			group = []byte{group[0], 0}
+		}
+
+		u16 := binary.LittleEndian.Uint16(group)
 		res = append(res, u16)
 	}
 
