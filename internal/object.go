@@ -4,6 +4,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/jedib0t/go-pretty/v6/table"
+	"github.com/maheshkhanwalkar/dysm/pkg/arch"
+	"github.com/maheshkhanwalkar/dysm/pkg/arch/arm64"
 	"github.com/maheshkhanwalkar/dysm/pkg/obj/machO"
 	"os"
 	"regexp"
@@ -19,6 +21,7 @@ type ObjectFile interface {
 	PrintHeaders()
 	PrintSymbolTable()
 	DumpSections(sectionNameRegex string) error
+	PrintDisassembly() error
 }
 
 // MachObjectFile represents a Mach-O object file and implements the ObjectFile interface
@@ -126,6 +129,34 @@ func (m *MachObjectFile) PrintSymbolTable() {
 	t.Render()
 }
 
+// PrintDisassembly prints out the disassembled machine code from the __text section out
+// as architecture-specific assembly language along with corresponding addresses.
+func (m *MachObjectFile) PrintDisassembly() error {
+	sections, err := m.findSections("__text")
+	if err != nil {
+		return err
+	}
+
+	textSection := sections[0]
+	var instructions []arch.Inst
+
+	switch m.Obj.CpuArchName() {
+	case "ARM64":
+		disasm := arm64.NewDisassembler()
+		arm64Insts, err := disasm.Disassemble(textSection.Data, textSection.Address)
+		if err != nil {
+			return err
+		}
+		instructions = toInstList(arm64Insts)
+	}
+
+	for _, instruction := range instructions {
+		fmt.Println(instruction.Asm())
+	}
+
+	return nil
+}
+
 func (m *MachObjectFile) findSections(sectionNameRegex string) ([]machO.Section, error) {
 	var matched = make([]machO.Section, 0)
 
@@ -193,4 +224,12 @@ func trimString(s string, maxLen int) string {
 	}
 
 	return s[:maxLen-3] + "..."
+}
+
+func toInstList[T arch.Inst](arr []T) []arch.Inst {
+	insts := make([]arch.Inst, 0, len(arr))
+	for _, inst := range arr {
+		insts = append(insts, arch.Inst(inst))
+	}
+	return insts
 }

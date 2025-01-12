@@ -31,10 +31,12 @@ func main() {
 
 	if *hdr {
 		obj.PrintHeaders()
+		return
 	}
 
 	if *symtab {
 		obj.PrintSymbolTable()
+		return
 	}
 
 	if *dump != "" {
@@ -42,6 +44,7 @@ func main() {
 		if err != nil {
 			die(err.Error())
 		}
+		return
 	}
 
 	if *dumpAll {
@@ -49,6 +52,14 @@ func main() {
 		if err != nil {
 			die(err.Error())
 		}
+		return
+	}
+
+	// If nothing else is specified, we just assume disassembly as the
+	// default action.
+	err = obj.PrintDisassembly()
+	if err != nil {
+		die(err.Error())
 	}
 }
 
