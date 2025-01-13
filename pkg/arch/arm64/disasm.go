@@ -7,9 +7,6 @@ import (
 	"strings"
 )
 
-type Disassembler struct {
-}
-
 type Instruction struct {
 	inst *arm64asm.Inst
 	addr uint64
@@ -25,11 +22,7 @@ type instWord struct {
 	instBytes []byte
 }
 
-func NewDisassembler() *Disassembler {
-	return &Disassembler{}
-}
-
-func (d *Disassembler) Disassemble(code []byte, startAddr uint64) ([]Instruction, error) {
+func Disassemble(code []byte, startAddr uint64) ([]Instruction, error) {
 	words, err := groupIntoInstWords(code)
 	instructions := make([]Instruction, 0, len(words))
 	address := startAddr

@@ -6,6 +6,7 @@ import (
 	"github.com/jedib0t/go-pretty/v6/table"
 	"github.com/maheshkhanwalkar/dysm/pkg/arch"
 	"github.com/maheshkhanwalkar/dysm/pkg/arch/arm64"
+	"github.com/maheshkhanwalkar/dysm/pkg/arch/x86_64"
 	"github.com/maheshkhanwalkar/dysm/pkg/obj/machO"
 	"os"
 	"regexp"
@@ -142,12 +143,17 @@ func (m *MachObjectFile) PrintDisassembly() error {
 
 	switch m.Obj.CpuArchName() {
 	case "ARM64":
-		disasm := arm64.NewDisassembler()
-		arm64Insts, err := disasm.Disassemble(textSection.Data, textSection.Address)
+		arm64Insts, err := arm64.Disassemble(textSection.Data, textSection.Address)
 		if err != nil {
 			return err
 		}
 		instructions = toInstList(arm64Insts)
+	case "x86_64":
+		x86Insts, err := x86_64.Disassemble(textSection.Data, textSection.Address)
+		if err != nil {
+			return err
+		}
+		instructions = toInstList(x86Insts)
 	}
 
 	for _, instruction := range instructions {
